@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: webapp
+  name: webapp
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: webapp
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: webapp
+    spec:
+      containers:
+      # - image: {{ lower .Values.deployment.repositoryName }}/k8s-fleetman-helm-demo:{{ default ".v1.0.0-dev" .Values.deployment.tag }}
+      - image: {{ .Values.deployment.repositoryName | default "richardchesterwooD" | lower}}/k8s-fleetman-helm-demo:{{ default ".v1.0.0-dev" .Values.deployment.tag }}
+        name: k8s-fleetman-helm-demo
+        resources: {}
+status: {}

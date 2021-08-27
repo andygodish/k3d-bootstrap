@@ -6,7 +6,6 @@ CURR_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )";
 # shellcheck source=./common.sh
 source "$CURR_DIR/common.sh";
 
-
 section "Create a k3d Cluster" 
 
 printf ${YEL}"Give your k3d cluster a name:${END} "
@@ -23,5 +22,5 @@ info_pause_exec "Create a cluster" "k3d cluster create $K3D_CLUSTER --api-port 6
 
 section "Access the Cluster"
 
-info_pause_exec "List k3d clusters" "k3d cluster list"
+info_pause_exec "List k3d clusters to view your new cluster" "k3d cluster list"
 

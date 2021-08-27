@@ -1,0 +1,3 @@
+# hello:
+#   world: {{ printf "false" }} # this can be any valid go code
+

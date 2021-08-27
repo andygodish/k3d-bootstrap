@@ -1,0 +1,206 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    meta.helm.sh/release-name: keycloak-db
+    meta.helm.sh/release-namespace: keycloak
+  creationTimestamp: "2021-08-26T22:51:27Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: postgresql
+    app.kubernetes.io/instance: keycloak-db
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: postgresql-ha
+    helm.sh/chart: postgresql-ha-7.9.2
+  name: keycloak-db-postgresql-ha-postgresql
+  namespace: keycloak
+  resourceVersion: "3518"
+  uid: 1cf49f86-d0aa-4f22-bda2-40668e7323f0
+spec:
+  podManagementPolicy: Parallel
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: postgresql
+      app.kubernetes.io/instance: keycloak-db
+      app.kubernetes.io/name: postgresql-ha
+  serviceName: keycloak-db-postgresql-ha-postgresql-headless
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: postgresql
+        app.kubernetes.io/instance: keycloak-db
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: postgresql-ha
+        helm.sh/chart: postgresql-ha-7.9.2
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: postgresql
+                  app.kubernetes.io/instance: keycloak-db
+                  app.kubernetes.io/name: postgresql-ha
+              namespaces:
+              - keycloak
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: POSTGRESQL_VOLUME_DIR
+          value: /bitnami/postgresql
+        - name: PGDATA
+          value: /bitnami/postgresql/data
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: keycloak-db-postgresql-ha-postgresql
+        - name: POSTGRES_DB
+          value: postgres
+        - name: POSTGRESQL_LOG_HOSTNAME
+          value: "true"
+        - name: POSTGRESQL_LOG_CONNECTIONS
+          value: "false"
+        - name: POSTGRESQL_LOG_DISCONNECTIONS
+          value: "false"
+        - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
+          value: "off"
+        - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+          value: error
+        - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+          value: pgaudit, repmgr
+        - name: POSTGRESQL_ENABLE_TLS
+          value: "no"
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: REPMGR_UPGRADE_EXTENSION
+          value: "no"
+        - name: REPMGR_PGHBA_TRUST_ALL
+          value: "no"
+        - name: REPMGR_MOUNTED_CONF_DIR
+          value: /bitnami/repmgr/conf
+        - name: REPMGR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: REPMGR_PARTNER_NODES
+          value: keycloak-db-postgresql-ha-postgresql-0.keycloak-db-postgresql-ha-postgresql-headless.$(REPMGR_NAMESPACE).svc.cluster.local,keycloak-db-postgresql-ha-postgresql-1.keycloak-db-postgresql-ha-postgresql-headless.$(REPMGR_NAMESPACE).svc.cluster.local,
+        - name: REPMGR_PRIMARY_HOST
+          value: keycloak-db-postgresql-ha-postgresql-0.keycloak-db-postgresql-ha-postgresql-headless.$(REPMGR_NAMESPACE).svc.cluster.local
+        - name: REPMGR_NODE_NAME
+          value: $(MY_POD_NAME)
+        - name: REPMGR_NODE_NETWORK_NAME
+          value: $(MY_POD_NAME).keycloak-db-postgresql-ha-postgresql-headless.$(REPMGR_NAMESPACE).svc.cluster.local
+        - name: REPMGR_LOG_LEVEL
+          value: NOTICE
+        - name: REPMGR_CONNECT_TIMEOUT
+          value: "5"
+        - name: REPMGR_RECONNECT_ATTEMPTS
+          value: "3"
+        - name: REPMGR_RECONNECT_INTERVAL
+          value: "5"
+        - name: REPMGR_USERNAME
+          value: repmgr
+        - name: REPMGR_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: repmgr-password
+              name: keycloak-db-postgresql-ha-postgresql
+        - name: REPMGR_DATABASE
+          value: repmgr
+        image: docker.io/bitnami/postgresql-repmgr:11.13.0-debian-10-r12
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /pre-stop.sh
+        livenessProbe:
+          exec:
+            command:
+            - bash
+            - -ec
+            - PGPASSWORD=$POSTGRES_PASSWORD psql -w -U "postgres" -d "postgres"  -h
+              127.0.0.1 -c "SELECT 1"
+          failureThreshold: 6
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: postgresql
+        ports:
+        - containerPort: 5432
+          name: postgresql
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - -ec
+            - PGPASSWORD=$POSTGRES_PASSWORD psql -w -U "postgres" -d "postgres"  -h
+              127.0.0.1 -c "SELECT 1"
+          failureThreshold: 6
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+        securityContext:
+          runAsUser: 1001
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /bitnami/postgresql
+          name: data
+        - mountPath: /pre-stop.sh
+          name: hooks-scripts
+          subPath: pre-stop.sh
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1001
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 493
+          name: keycloak-db-postgresql-ha-postgresql-hooks-scripts
+        name: hooks-scripts
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
+      volumeMode: Filesystem
+    status:
+      phase: Pending
+status:
+  collisionCount: 0
+  currentReplicas: 2
+  currentRevision: keycloak-db-postgresql-ha-postgresql-7546b98448
+  observedGeneration: 1
+  replicas: 2
+  updateRevision: keycloak-db-postgresql-ha-postgresql-7546b98448
+  updatedReplicas: 2
